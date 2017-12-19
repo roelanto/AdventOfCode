@@ -9,7 +9,6 @@ readplan <- function(filename) {
 
 
 inside <- function(pos, plan) {
-#     message(pos[1], " ", pos[2], " ", dim(plan)[1], " ", dim(plan)[2])
     if (pos[1] > 0 && pos[1] <=dim(plan)[1] &&
         pos[2] > 0 && pos[2] <=dim(plan)[2]) 
         return(TRUE)
@@ -51,34 +50,36 @@ changedirection <- function(currentdir, lastdir) {
 plan <- readplan("~/AdventOfCode/day19/input.txt")
 
 
+## determine startpos, assume it is on the first row. 
 startpos <- c(1,1)
 for (x in c(1:(dim(plan)[2]-1))) {
-    message(x)
     if (plan[1,x] == '|') startpos<-c(1,x)
 }
+
+## walk the graph. Start going south, change direction where needed. 
 pos <- startpos
 direction<-"SOUTH"
-lastdir <- "SOUTH"
-tried <- c()
-numsteps <- 1
+lastdir <- "SOUTH" # Remember last traveled direction so that we can pick a different one.
+tried <- c() # Will hold the directions tried. We only go NS or EW, so if this exceeds 2, we exhausted the options. 
+numsteps <- 1 # Will hold the number of steps taken, for part 2.
 while(length(tried) <= 2) {
     status <- "RUNNING"
-    while(status == "RUNNING") {
+    while(status == "RUNNING") { ## loop until we can't go any further.
         proposedmove <- nextmove(pos, direction, plan)
         if (proposedmove$status == "OK") {
             if (!(plan[proposedmove$nextmove[1], proposedmove$nextmove[2]] %in% c(" ", "\n"))) {
                 pos <- proposedmove$nextmove
                 numsteps <- numsteps + 1
-                tried <- c()
+                tried <- c() 
                 if (plan[proposedmove$nextmove[1], proposedmove$nextmove[2]] %in% LETTERS) {
                     message(plan[proposedmove$nextmove[1], proposedmove$nextmove[2]])
                 }
                 lastdir <- direction
-            } else {
-                status <- "OOB"
+            } else { 
+                status <- "OOB" ## end of path traveled
             }
-        } else {
-            status <- "OOB"
+        } else { 
+            status <- "OOB" ## end of map
         }
     }
     direction <- changedirection(direction, lastdir)
