@@ -60,6 +60,7 @@ pos <- startpos
 direction<-"SOUTH"
 lastdir <- "SOUTH"
 tried <- c()
+numsteps <- 1
 while(length(tried) <= 2) {
     status <- "RUNNING"
     while(status == "RUNNING") {
@@ -67,6 +68,7 @@ while(length(tried) <= 2) {
         if (proposedmove$status == "OK") {
             if (!(plan[proposedmove$nextmove[1], proposedmove$nextmove[2]] %in% c(" ", "\n"))) {
                 pos <- proposedmove$nextmove
+                numsteps <- numsteps + 1
                 tried <- c()
                 if (plan[proposedmove$nextmove[1], proposedmove$nextmove[2]] %in% LETTERS) {
                     message(plan[proposedmove$nextmove[1], proposedmove$nextmove[2]])
@@ -82,3 +84,5 @@ while(length(tried) <= 2) {
     direction <- changedirection(direction, lastdir)
     tried <- append(tried, direction)
 }
+
+message("Num steps ", numsteps)
