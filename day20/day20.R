@@ -1,5 +1,4 @@
 filename <- "~/AdventOfCode/day20/input.txt"
-lines <- read.table(filename)
 
 
 
@@ -20,11 +19,13 @@ distance <- function(p) {
     sum(abs(p@coords))
 }
 
+determineduplicated <- function(points) {
+    return(!(duplicated(lapply(points, function(x) {x@coords})) | duplicated(lapply(points, function(x) {x@coords}), fromLast=TRUE)))
+}
 
 setClass("point", representation(coords="vector", v="vector", a="vector"))
 
 
-#function readInput(filename) {
 lines <- read.table(filename)
 points <- vector("list", length=nrow(lines))
 for (i in c(1:nrow(lines))) {
@@ -35,22 +36,20 @@ for (i in c(1:nrow(lines))) {
                  v=c(parsecoords(line[[2]])))
     points[[i]] <- point
 }
-points
-                                        #}
-
 
 distorder  <- order(sapply(points, distance))
 prevdistorder <- order(sapply(points, distance), decreasing=TRUE)
-while (sum(prevdistorder == distorder) != length(distorder)) {
+while ((length(prevdistorder) != length(distorder)) || sum(prevdistorder == distorder) != length(distorder)) {
     prevdistorder <- distorder
-    message(paste(distorder, " "))
+#    message(paste(distorder, " "))
     for (i in c(1:10)) {
         points <- lapply(points, update)
+        points <- points[determineduplicated(points)]
         distances <- sapply(points, distance)
         distorder <- order(distances)
     }
 }
 
-distorder
+length(distorder)
 
 
