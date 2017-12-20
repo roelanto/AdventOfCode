@@ -47,7 +47,7 @@ changedirection <- function(currentdir, lastdir) {
 }
 
 
-plan <- readplan("~/AdventOfCode/day19/input.txt")
+plan <- readplan("~/AdventOfCode/day19/inputesther.txt")
 
 
 ## determine startpos, assume it is on the first row. 
