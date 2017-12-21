@@ -1,3 +1,12 @@
+
+library(parallel)
+
+no_cores <- detectCores() - 1
+cl <- makeCluster(no_cores)
+clusterExport(cl, "expand")
+clusterExport(cl, "blockasstring")
+clusterExport(cl, "rotate")
+
 ruletable <- read.delim("~/AdventOfCode/day21/input.txt", sep=' ', header=FALSE, stringsAsFactors=FALSE)
 
 rules <- vector("list", length=nrow(ruletable))
@@ -15,8 +24,6 @@ for (i in c(1:nrow(ruletable))) {
 }
 
 block <- matrix(strsplit(".#...####", "")[[1]], byrow=TRUE, nrow=3)
-#applypattern <- function(rules, block) {
-
 
 applyrules <- function(block, rules) {
     for (rule in rules) {
@@ -40,30 +47,8 @@ applyrules <- function(block, rules) {
             return(l[[1]])
         }
     }
-    message("COULDN'T FIND ANY RULE (this should not happen)")
+    stop("COULDN'T FIND ANY RULE (this should not happen)")
 }
-
-
-#ctr <- 1
-#m1 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m2 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m3 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m4 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m5 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m6 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m7 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m8 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-## m9 <- matrix(ctr*c(1,2,3,4), nrow=2, byrow=TRUE)
-## ctr <- ctr+1
-
 
 
 glue <- function(l) {
@@ -74,7 +59,6 @@ glue <- function(l) {
         for (col in c(1:size)) {
             rows[[row]] <- cbind(rows[[row]], l[[((row-1)*size)+col]])
         }
-        print(rows[[row]])
     }
     res <- NULL
     for (row in rows) {
@@ -84,27 +68,17 @@ glue <- function(l) {
 }
 #one <- list(m1)
 #two <- list(m1,m2,m3,m4)
-#3three <- list(m1,m2,m3,m4,m5,m6,m7,m8,m9)
+#three <- list(m1,m2,m3,m4,m5,m6,m7,m8,m9)
 #glue(one)
 #glue(two)
 #glue(three)
 
 
-iterations <- function(block, numiters) {
-    pblocks <- block
-    for (i in c(1:numiters)) {
-        pblocks <- process(pblocks)
-        res <- lapply(pblocks, applyrules, rules)
-        pblocks <- glue(res)
-    }
-    return(pblocks)
-}
 
 expand <- function(x) {
     res <- vector("list", length=8)
     b<-x
     res[[1]] <- b
-#    message("expand ", x)
     for (i in c(1:3)) {
         b <- rotate(b)
         res[[i+1]] <- b
@@ -117,7 +91,6 @@ expand <- function(x) {
         b <- rotate(b)
         res[[i+1]] <- b
     }
-#    message("expand done")
     return(res)
 }
 
@@ -132,13 +105,11 @@ process <- function(block) {
     if (nrow(block) %% 2 == 0) {
         bs <- 2
     }
-#    message("bs : ", bs)
     res <- vector("list", length=(nrow(block)/bs)^2)
     i<-1
     for (x in seq(from=1, to=nrow(block), by=bs)) {
         for (y in seq(from=1, to=nrow(block), by=bs)) {
             res[[i]] <- block[c(x:(x+(bs-1))),c(y:(y+(bs-1)))]
-#            print(res[[i]])
             i<-i+1
         }
     }
@@ -146,35 +117,28 @@ process <- function(block) {
 }
 
 
-iterations(block, 2)
+iterations <- function(block, numiters) {
+    pblocks <- block
+    for (i in c(1:numiters)) {
+        message("iteration ", i)
+        pblocks <- process(pblocks)
+        message("processing ", length(pblocks), " blocks")
+        res <- parLapply(cl, pblocks, applyrules, rules)
+        message("res size: ", length(res))
+        pblocks <- glue(res)
+    }
+    return(pblocks)
+}
 
-pblocks <- block
-pblocks <- process(pblocks)
-res <- lapply(pblocks, applyrules, rules)
-pblocks <- glue(res)
-pblocks
-
-pblocks <- process(pblocks)
-res <- lapply(pblocks, applyrules, rules)
-pblocks <- glue(res)
-pblocks
-
-pblocks <- process(pblocks)
-res <- lapply(pblocks, applyrules, rules)
-pblocks <- glue(res)
-pblocks
-
-pblocks <- process(pblocks)
-res <- lapply(pblocks, applyrules, rules)
-pblocks <- glue(res)
-pblocks
-
-pblocks <- process(pblocks)
-res <- lapply(pblocks, applyrules, rules)
-pblocks <- glue(res)
-pblocks
-
+## pt 1
+pblocks <- iterations(block, 5)
 sum(as.character(pblocks)=="#")
+
+##pt 2
+pblocks <- iterations(block, 18)
+sum(as.character(pblocks)=="#")
+
+
 
 ## res <- lapply(rules, function(rule) {
 ##     expandedpatterns <- expand(rule$pattern)
