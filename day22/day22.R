@@ -1,9 +1,11 @@
 #library(compiler)
-#enableJIT(3)
+                                        #enableJIT(3)
+library(memoise)
 
 directions <- c("N", "E", "S", "W")
-directionsmp <- list(c(-1,0), c(0,-1), c(1,0), c(0,1))
+directionsmp <- list(c(-1,0), c(0,1), c(1,0), c(0,-1))
 currentdir <- directions[1]
+numrows <- 50
 
 addcol <- function(grid, num) {
     col <- matrix(rep(0, times=num*dim(grid)[1]), ncol=num)
@@ -49,7 +51,7 @@ updateposition <- function(grid, current, currentdiridx, numinfections) {
 #    message("currentdiridx ", currentdiridx)
     currentdir <- directions[1 + (currentdiridx %% 4 )]
 #    message("Step to ", directions[1 + (currentdiridx %% 4 )])
-    return(list(current=current+directionsmp[[1 + (currentdiridx %% 4 )]], currentdir=currentdir, currentdiridx=currentdiridx, grid=grid, numinfections=numinfections))
+    return(list(current=current+directionsmp[[1 + (currentdiridx %% 4 )]], currentdir=currentdir, currentdiridx=currentdiridx, status=status, numinfections=numinfections))
 }
 
 setcell <- function(grid, x, y, val) {
@@ -117,7 +119,7 @@ computePart1 <- function() {
                                         #    print(grid)
                                         #    message(current)
     }
-    message("# infections: ", numinfections)
+##    message("# infections: ", numinfections)
 }
 
 ## part 2
@@ -152,70 +154,149 @@ library(BMS)
 library(hashFunction)
 library(bit)
 
-computeHash <- function(val, algo=c("murmur3.32", "spooky.32")) {
+
+slowComputeHash <- function(val, algo=c("murmur3.32", "spooky.32")) {
     serialized <- as.character(paste(val, collapse=","))
 #    message("serialized ", val, " to serialized ", serialized)
-    hashes <- sapply(algo, function(x) {
-        if (x == "murmur3.32") 
-        {
-            return(murmur3.32(serialized))
-        } else {
-            if (x == "spooky.32") {
-                return(spooky.32(serialized))
-            } else {
-                stop("THIS CANNOT HAPPEN, HASH WAS CALLED WITH nonexisting HASH FUNCTION")
-            }
-        }
-    })
+    hashes <- c(murmur3.32(serialized), spooky.32(serialized))
 #    message("Hashes pre: ", hashes, " post: ", bitwAnd(hashes,  0xffff))
     return(bitwAnd(hashes,  0xffff))
 }
 
 
-setinfected <- function(x, infected) {
-    infected[computeHash(x)] <- TRUE
-    infected
-}
+computeHash <- slowComputeHash
 
-clearinfected <- function(x, infected) {
-    infected[computeHash(x)] <- FALSE
-    infected
-}
+## na iter 1: 5,4: 1, 5,5: 3, 4,6: 1
+## na iter 2: 5,4: 2, 5,5: 3, 4,6: 1
+## ma iter 3: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3
+## ma iter 4: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3
+## ma iter 5: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 3
+## ma iter 6: 5,4: 4, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 3
+## ma iter 7: 5,4: 4, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 1
 
-setflagged <- function(x, flagged) {
-    flagged[computeHash(x)] <- TRUE
-    flagged
-}
-clearflagged <- function(x, flagged) {
-    flagged[computeHash(x)] <- FALSE
-    flagged
-}
+## 1 = infected, 2 = flagged, 3 = weakened, 4 = clean
 
-setweakened <- function(x, weakened) {
-#    message("Weakened ", x)
-    h <- computeHash(x)
-#    message("Hashes: ", paste(h, " "))
-#    message("Currently: ", weakened[h])
-    weakened[h] <- TRUE
-#    message("After set: ", weakened[h])
-    weakened
-}
-clearweakened <- function(x, weakened) {
-    weakened[computeHash(x)] <- FALSE
-    weakened
-}
+## 1 = weakened, 2 == flagged, 3 == infected 4 == clean
+## na iter 1: 5,4: 3, 5,5: 1, 4,6: 3
+## na iter 2: 5,4: 2, 5,5: 1, 4,6: 3
+## ma iter 3: 5,4: 2, 5,5: 1, 4,6: 3, 4,4: 1
+## ma iter 4: 5,4: 2, 5,5: 1, 4,6: 3, 4,4: 1, 4,3: 1
+## ma iter 5: 5,4: 2, 5,5: 1, 4,6: 3, 4,4: 1, 4,3: 1, 5,3: 1
+## ma iter 6: 5,4: 4, 5,5: 1, 4,6: 3, 4,4: 1, 4,3: 1, 5,3: 1
+## ma iter 7: 5,4: 4, 5,5: 1, 4,6: 3, 4,4: 1, 4,3: 1, 5,3: 3
 
 
 
-isinfected <- function(x, infected) {
-    sum(infected[computeHash(x)])==2
+setinfected <- function(x, status) {
+    setstatus(x, status, 2)
 }
-isweakened <- function(x, weakened) {
-#    message("Isweakened: sum: ", weakened[computeHash(x)])
-    sum(weakened[computeHash(x)]) == 2
+
+setflagged <- function(x, status) {
+    setstatus(x, status, 3)
 }
-isflagged <- function(x, flagged) {
-    sum(flagged[computeHash(x)]) == 2
+
+setweakened <- function(x, status) {
+    setstatus(x, status, 1)
+}
+
+setclean <- function(x, status) {
+    setstatus(x, status, 4)
+}
+
+createid <- function(pos, status, seqno) {
+##    return(serialize(list(x=pos[1], y=pos[2], status=status, seqno=seqno), connection=NULL, ascii=TRUE))
+    
+    return(sprintf("%i,%i,%s,%i", pos[1], pos[2], status, seqno))
+    return(paste(paste(pos, collapse=";"), status, seqno, collapse=","))
+}
+
+#createid <- memoise(memcreateid)
+           
+lookupstatus <- function(x, status, numrows=50) {
+    debugoutput <- FALSE
+    id <- createid(pos=x, "W", 1)
+    if (debugoutput) message("id of cell ", x, ": ", id)
+    hashes <-computeHash(id)
+    if (debugoutput) message("hashes: ", hashes)
+    if (debugoutput) message("Sum status hashes: ", sum(status[hashes]))
+    if (sum(status[hashes]) != 2) {
+        if (debugoutput) message("lookupstatus: returning NA")
+        return(NA)
+    }
+    ids <- sapply(c("W", "I", "F", "C"), function(status, pos) {sapply(c(1:numrows), function(seqno, status, pos) {createid(pos=pos, status, seqno)}, status=status, pos=pos)}, pos=x)
+    ##browser()
+    row <- 1
+    col <- 1
+    lastrow <- row
+    lastcol <- col
+    while (row < numrows && sum(status[hashes]) == 2) {
+        lastrow <- row
+        lastcol <- col
+        col <- col + 1
+        if (col > 4) {
+            col <- 1
+            row <- row + 1
+        }
+        hashes <- computeHash(ids[row,col])
+        if (debugoutput) message("for seqno ", row, " and status ", col, " found ", sum(status[hashes]), " hashes")
+    }
+    if (row >= numrows) {
+        stop("MORE THAN ",numrows," ROWS IN THE CHAIN, INCREASE CHAIN")
+    }
+    if (debugoutput) message("Found status ", lastcol, " at seqno ", lastrow)
+    return(list(seqno = lastrow, status=lastcol))
+}
+
+
+setstatus <- function(x, status, thestatus) {
+    mystatus <- lookupstatus(x, status)
+    ps <- c(1, 2, 3, 4)
+    if (length(mystatus) < 2 && is.na(mystatus)) {
+##        message("setstatus ",x,": unseen yet")
+        for (i in c(1:thestatus)) {
+            id <- createid(pos=x, c("W","I", "F", "C")[i], 1)
+ ##           message(" id ", id)
+            hashes <-computeHash(id)
+            status[hashes] <- TRUE
+        }
+    } else {
+  ##      message("setstatus ",x," to ", thestatus, ": last known status: seqno = ", mystatus[["seqno"]], ", status: ", mystatus[["status"]])
+        id <- createid(pos=x, c("W", "I", "F", "C")[thestatus], ifelse(thestatus != 1, mystatus[["seqno"]], mystatus[["seqno"]]+1))
+        hashes <-computeHash(id)
+        status[hashes] <- TRUE
+    }   
+    status
+}
+
+##status <- bit(length=bitstringlength)
+
+##status <- setstatus(c(1,2), status, 1)
+##status <- setstatus(c(1,2), status, 2)
+
+
+hasstatus <- function(x, status, whichstatus) {
+    thestatus <- lookupstatus(x, status, numrows=numrows)
+    if (length(thestatus) > 1 && !is.na(thestatus)) {
+        return(thestatus[["status"]] == whichstatus)
+    } else {
+        ## if na, assume it is clean
+        return (whichstatus == 4)
+    }
+}
+
+isclean <- function(x, status) {
+    hasstatus(x, status, 4)
+}
+isinfected <- function(x, status) {
+    hasstatus(x, status, 2)
+
+}
+isweakened <- function(x, status) {
+    hasstatus(x, status, 1)
+}
+isflagged <- function(x, status) {
+    hasstatus(x, status, 3)
+
 }
 
 plotgrid <- function(dims, infected, weakened, flagged, algos=c("murmur3.32", "spooky.32"), coords=NA) {
@@ -242,81 +323,127 @@ plotgrid <- function(dims, infected, weakened, flagged, algos=c("murmur3.32", "s
 }
 
 
-updateposition3 <- function(current, currentdiridx, numinfections, weakened, infected, flagged) {
+updateposition3 <- function(current, currentdiridx, numinfections, status, debugoutput=TRUE) {
     mod <- 0
-#    message("current: ", current)
-    if (isweakened(current, weakened)) {
-#        message("current is weakened")
-        infected <- setinfected(current, infected)
-        weakened <- clearweakened(current, weakened)
-        numinfections <- numinfections + 1
-        mod <- 0
-    } else {
-        if (isinfected(current, weakened)) {
-#            message("current is infected")
-            mod <- -1
-            infected <- clearinfected(current, infected)
-            flagged <- setflagged(current, flagged)
-        } else {
-            if (isflagged(current, weakened)) {
-#                message("current is flagged")
+##    print(paste("Input status: ", status))
+    if (debugoutput) message("current: ", current)
+#    browser()
+         thestatus <- lookupstatus(current, status)
+         if (length(thestatus) < 2 || is.na(thestatus)) {
+             if (debugoutput) message("the status == NA")
+             laststatus <- 4
+         } else {
+             laststatus <- thestatus[["status"]]
+         }
+         if (debugoutput) message("Status of cell ", current, ": ", laststatus)
+         
 
-                mod <- 2
-                flagged <- clearflagged(current, flagged)
-            } else {
-                mod <- 1
-                weakened <- setweakened(current, infected)
-            }
-            
-        }
-    }
+         if (laststatus == 4) {
+             if (debugoutput) message("current is clean")
+             mod <- -1
+             status <- setweakened(current, status)
+         } else {
+             if (laststatus == 1) {
+                 if (debugoutput) message("current is weakened: ", current, " adding an infection")
+                 status <- setinfected(current, status)
+                 numinfections <- numinfections + 1
+                 if (debugoutput) message("numinfections: ", numinfections)
+                 mod <- 0
+             } else {
+                 if (laststatus == 2) {
+                     if (debugoutput) message("current is infected")
+                     mod <- 1
+                     if (debugoutput) message("flagging current: ", current)
+                     status <- setflagged(current, status)
+                 } else {
+                     if (laststatus == 3) {
+                         if (debugoutput) message("current is flagged")
+                         status <- setclean(current, status)
+                         mod <- 2
+                     } 
+                 }
+             }
+         }
     currentdiridx <- currentdiridx + mod
-#    message("Mod is : ", mod, ifelse(mod == -1, "right", ifelse(mod==1, "left", ifelse(mod==0, "same", "reverse"))))
-#    message("New direction: ", currentdiridx)
+    ##    message("Mod is : ", mod, ifelse(mod == -1, "right", ifelse(mod==1, "left", ifelse(mod==0, "same", "reverse"))))
+    if (debugoutput) message("New direction: ", currentdiridx)
                 
     ##    browser()
-#    message("Step from ... ", current)
+    if (debugoutput) message("Step from ... ", current)
     newval <- current+directionsmp[[1 + ((currentdiridx-1) %% 4 )]]
-#    message("     to   ... ", newval)
-#    message("Change ", current, " to ", newval)
+    if (debugoutput) message("     to   ... ", newval)
+    if (debugoutput)    message("Change ", current, " to ", newval)
     currentdir <- directionsmp[[1 + ((currentdiridx-1) %% 4 )]]
-#    message("currentdiridx ", currentdiridx, "(", directions[1 + ((currentdiridx-1) %% 4 )], ")")
-    return(list(current=newval, currentdir=currentdir, currentdiridx=currentdiridx, numinfections=numinfections, weakened=weakened, infected=infected, flagged=flagged))
+    if (debugoutput) message("currentdiridx ", currentdiridx, "(", directions[1 + ((currentdiridx-1) %% 4 )], ")")
+    return(list(current=newval, currentdir=currentdir, currentdiridx=currentdiridx, numinfections=numinfections, status=status))
 }
 
 
 algos <- c("murmur3.32", "spooky.32")
 
 
-simulate <- function(infected, weakened, flagged, dims, numiter) {
+simulate <- function(infected, weakened, flagged, dims, numiter, status, debugoutput=TRUE) {
     current <- c(1+((dims-1)/2),1+((dims-1)/2))
     currentdiridx <- 1
     numinfections <- 0
+    start <- Sys.time()
     
     for (i in c(1:numiter)) {
-        
-        res <- updateposition3(current, currentdiridx, numinfections, weakened=weakened, infected=infected, flagged=flagged)
+        res <- updateposition3(current, currentdiridx, numinfections, status=status, debugoutput=debugoutput)
+        if (debugoutput)  {
+            message("NA ITER ", i)
+            message("current pos: ", res$current)
+            message("current status: ", res$status, " sum: ", sum(res$status))
+        }
+#        browser()
         
         current <- res[["current"]]
         currentdiridx <- res[["currentdiridx"]]
+        if (debugoutput) {
+            message("Current dir idx: ", res[["currentdiridx"]], " = ", directions[[1 + ((currentdiridx-1) %% 4 )]], " mod ", directionsmp[[1 + ((currentdiridx-1) %% 4 )]])
+            message("Change to dir idx: ", res[["currentdiridx"]])
+        }
+
         numinfections <- res[["numinfections"]]
-        weakened <- res[["weakened"]]
-        flagged <- res[["flagged"]]
-        infected <- res[["infected"]]
-        if ((i %% 10000) == 0)  message(i / numiter)
+        status <- res[["status"]]
+        if ((i %% (numiter / 1000)) == 0) {
+            elapsed <- Sys.time() - start
+            message(i / numiter, " in ", round(elapsed, 3), "secs")
+            start <- Sys.time()
+        }
     }
+##    print(current)
+    print(status)
     numinfections
 }
 
 dims <- 9
 bitstringlength <- (2^16)
-infected <- bit(length=bitstringlength)
-weakened <- bit(length=bitstringlength)
-flagged <- bit(length=bitstringlength)
-infected[abs(computeHash(c(4,6)))]  <- TRUE
-infected[abs(computeHash(c(5,4)))]  <- TRUE
+status <- bit(length=bitstringlength)
+#infected[abs(computeHash(c(4,6)))]  <- TRUE
+#infected[abs(computeHash(c(5,4)))]  <- TRUE
+status <- setinfected(c(5,4), status)
 
-simulate(infected, weakened, flagged, dims, 10000000)
+status <- setinfected(c(4,6), status)
+status <- setclean(c(5,5), status)
+
+current <- c(5,5)
+currentdiridx <- 0
+current <- c(1+((dims-1)/2),1+((dims-1)/2))
+currentdiridx <- 1
+numinfections <- 0
+
+## na iter 1: pos: 5,4; 5,4: 1, 5,5: 3, 4,6: 1, direction: W
+## na iter 2: pso: 4,4: 5,4: 2, 5,5: 3, 4,6: 1, direciton: N
+## ma iter 3: pos: 4,3: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3, direciton: W
+## ma iter 4: pos: 5,3: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3: direction: S
+## ma iter 5: pos: 5,4: 5,4: 2, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 3, direction: E
+## ma iter 6: pos: 5,3: 5,4: 4, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 3, direction: W
+## ma iter 7: pos: 5,2: 5,4: 4, 5,5: 3, 4,6: 1, 4,4: 3, 4,3: 3, 5,3: 1, direction: W
+
+# 1 = infected, 2 = flagged, 3 = weakened, 4 = clean
+
+res <- simulate(infected, weakened, flagged, dims, 1e7, status, debugoutput=FALSE)
 
 dornd <- function(infected, samples) {
     infected[samples] <- TRUE
@@ -326,6 +453,14 @@ dornd <- function(infected, samples) {
 #    weakened[i] <- TRUE
 #}
     
+
+setClass("Pos", representation(x = "numeric", y = "numeric", status = "numeric"))
+pos1 <- new("Pos", x=5, y=4, status=2)
+pos2 <- new("Pos", x=4, y=5, status=2)
+av <- vector(length=1e7, mode="list")
+av[[1]] <- pos1
+av[[2]] <- pos2
+
 
 ##computePart2()
 
