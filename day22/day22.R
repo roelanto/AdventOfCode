@@ -214,7 +214,7 @@ createid <- function(pos, status, seqno) {
 #createid <- memoise(memcreateid)
 
 lookupstatus <- function(pos, statusdf) {
-    thestatus <- statusdf[.(pos[1], pos[2]), 3L, on=c("x", "y")]
+    thestatus <- statusdf[.(pos[1], pos[2]), 3L]
     if (is.na(thestatus)) {
         return (list(status=4))
     } else {
@@ -259,18 +259,23 @@ lookupstatusbitstring <- function(x, status, numrows=50) {
 }
 
 setstatus <- function(pos, statusdf, thestatus) {
-    numrows <- statusdf[.(pos[1], pos[2]), .N, nomatch=0L, on=c("x", "y")]
-    if (numrows == 0) {
-        rownr <-  which(is.na(statusdf[,x]))[1]
-        if (rownr == nrow(statusdf)) {
-            stop("Length of status data frame exhausted, increase limit")
-        }
-        set(statusdf, rownr, 1L, pos[1])
-        set(statusdf, rownr, 2L, pos[2])
-        set(statusdf, rownr, 3L, thestatus)
-##        setkey(statusdf, x, y)
+    if (thestatus == 9) {
+        statusdf <- statusdf[! .(pos[1], pos[2])]
+        if (is.null(key(statusdf))) setkey(statusdf,x ,y)
     } else {
-        statusdf[.(pos[1], pos[2]), status := thestatus, on=c("x", "y")]
+        numrows <- statusdf[.(pos[1], pos[2]), .N, nomatch=0L]
+        if (numrows == 0) {
+            rownr <-  which(is.na(statusdf[,x]))[1]
+            if (rownr == nrow(statusdf)) {
+                stop("Length of status data frame exhausted, increase limit")
+            }
+            set(statusdf, rownr, 1L, pos[1])
+            set(statusdf, rownr, 2L, pos[2])
+            set(statusdf, rownr, 3L, thestatus)
+            setkey(statusdf, x, y)
+        } else {
+            statusdf[.(pos[1], pos[2]), status := thestatus]
+        }
     }
     statusdf
 }
@@ -413,7 +418,10 @@ simulate <- function(infected, weakened, flagged, dims, numiter, status, debugou
     currentdiridx <- 1
     numinfections <- 0
     start <- Sys.time()
+    totelapsed <- 0
     print("Start simulation")
+    stepsize <- 10000
+    shouldDelete <- FALSE
     
     for (i in c(1:numiter)) {
         res <- updateposition3(current, currentdiridx, numinfections, status=status, debugoutput=debugoutput)
@@ -433,9 +441,27 @@ simulate <- function(infected, weakened, flagged, dims, numiter, status, debugou
 
         numinfections <- res[["numinfections"]]
         status <- res[["status"]]
-        if ((i %% (numiter / 10000)) == 0) {
+        if ((i %% (numiter / stepsize)) == 0) {
+            if (shouldDelete) {
+                orignum <- sum(!is.na(status[,x]))
+                setkey(status, "status")
+                status <- status[!.(4)]
+                setkey(status, x, y)
+                nownum <- sum(!is.na(status[,x]))
+                message("Removed ", orignum - nownum, " items")
+            }
             elapsed <- Sys.time() - start
-            message(i / numiter, " in ", round(elapsed, 3), "secs (est: ", elapsed * (numiter / 10000), " seconds)")
+            totelapsed <- totelapsed + elapsed
+            numblockremaining <- (numiter-i)/stepsize
+            est <- (totelapsed / (i/10000)) * (1000-(i/1000))
+##            estsec <- est %% 60
+            ##            estmin <- est / 60
+            ##            message("totelpased: ", totelapsed, "i: ", i)
+            remest <-  numblockremaining * (totelapsed / (i/stepsize))
+            eta <- Sys.time() + remest
+            memused <- sum(!is.na(status[,x]))
+            
+            message(i / numiter, " in ", round(elapsed, 3), "secs (rem est: ", round(remest,2), " seconds, " ,eta,"), mem: ", memused, " (", round(100*(memused/(6*20000)), 2), "%)" )
             start <- Sys.time()
         }
     }
@@ -444,14 +470,15 @@ simulate <- function(infected, weakened, flagged, dims, numiter, status, debugou
     numinfections
 }
 
-numrows <- 1e6
+numrows <- 20000*6
 status <- data.table(x=as.numeric(rep(NA, numrows)), y=as.numeric(rep(NA, numrows)), status=as.numeric(rep(NA, numrows)))
 setkey(status, x, y)
-dims <- 9
-status <- setinfected(c(5,4), status)
-status <- setinfected(c(4,6), status)
-status <- setclean(c(5,5), status)
-current <- c(5,5)
+dims <- 25
+##dims <- 9
+##status <- setinfected(c(5,4), status)
+##status <- setinfected(c(4,6), status)
+##status <- setclean(c(5,5), status)
+##current <- c(5,5)
 currentdiridx <- 0
 current <- c(1+((dims-1)/2),1+((dims-1)/2))
 currentdiridx <- 1
@@ -470,8 +497,21 @@ numinfections <- 0
 
 ##res <- simulate(infected, weakened, flagged, dims, 7, status, debugoutput=TRUE)
 
+
+lines <- read.delim(file="~/AdventOfCode/day22/input.txt", stringsAsFactors=FALSE, sep="Q", header=FALSE)
+grid <- matrix(as.character(unlist(apply(lines, 1, strsplit, ""))), nrow=nrow(lines), byrow=TRUE)
+for (row in c(1:nrow(grid))) {
+    for (col in c(1:ncol(grid))) {
+        if (grid[row,col] == "#") {
+            status <- setinfected(c(row,col), status)
+        }
+    }
+}
+
 ##res <- simulate(infected, weakened, flagged, dims, 100, status, debugoutput=FALSE)
 
 res <- simulate(infected, weakened, flagged, dims, 1e7, status, debugoutput=FALSE)
+
+##res <- simulate(infected, weakened, flagged, dims, 7, status, debugoutput=TRUE)
 res
 
