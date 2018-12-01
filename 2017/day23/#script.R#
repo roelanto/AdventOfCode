@@ -1,0 +1,193 @@
+all <- list( function(regs) {
+    message(" set b 79 ")
+    regs[["b"]] <- 79 
+    regs[["nxt"]] <- regs[["nxt"]] + 1 
+    regs
+}
+ , function(regs) {
+     message(" set c b ")
+     regs[["c"]] <- regs[["b"]] 
+     regs[["nxt"]] <- regs[["nxt"]] + 1 
+     regs
+ }
+ , function(regs) {
+     message(" jnz a 2 ")
+     if ( regs[["a"]]  > 0) {
+         regs[["nxt"]] <- regs[["nxt"]] +  2 
+         regs
+     }
+ , function(regs) {
+ message(" jnz 1 5 ")
+ if ( 1  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  5 
+         regs
+    }
+ , function(regs) {
+ message(" mul b 100 ")
+ regs[["b"]] <- 100 * regs[["b"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub b -100000 ")
+ regs[["b"]]<-regs[["b"]]--100000
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set c b ")
+ regs[["c"]] <- regs[["b"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub c -17000 ")
+ regs[["c"]]<-regs[["c"]]--17000
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set f 1 ")
+ regs[["f"]] <- 1 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set d 2 ")
+ regs[["d"]] <- 2 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set e 2 ")
+ regs[["e"]] <- 2 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set g d ")
+ regs[["g"]] <- regs[["d"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" mul g e ")
+ regs[["g"]] <- regs[["e"]] * regs[["g"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub g b ")
+ regs[["g"]]<-regs[["g"]]-regs[["b"]]
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" jnz g 2 ")
+ if ( regs[["g"]]  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  2 
+         regs
+    }
+ , function(regs) {
+ message(" set f 0 ")
+ regs[["f"]] <- 0 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub e -1 ")
+ regs[["e"]]<-regs[["e"]]--1
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set g e ")
+ regs[["g"]] <- regs[["e"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub g b ")
+ regs[["g"]]<-regs[["g"]]-regs[["b"]]
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" jnz g -8 ")
+ if ( regs[["g"]]  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  -8 
+         regs
+    }
+ , function(regs) {
+ message(" sub d -1 ")
+ regs[["d"]]<-regs[["d"]]--1
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set g d ")
+ regs[["g"]] <- regs[["d"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub g b ")
+ regs[["g"]]<-regs[["g"]]-regs[["b"]]
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" jnz g -13 ")
+ if ( regs[["g"]]  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  -13 
+         regs
+    }
+ , function(regs) {
+ message(" jnz f 2 ")
+ if ( regs[["f"]]  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  2 
+         regs
+    }
+ , function(regs) {
+ message(" sub h -1 ")
+ regs[["h"]]<-regs[["h"]]--1
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" set g b ")
+ regs[["g"]] <- regs[["b"]] 
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" sub g c ")
+ regs[["g"]]<-regs[["g"]]-regs[["c"]]
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" jnz g 2 ")
+ if ( regs[["g"]]  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  2 
+         regs
+    }
+ , function(regs) {
+ message(" jnz 1 3 ")
+ if ( 1  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  3 
+         regs
+    }
+ , function(regs) {
+ message(" sub b -17 ")
+ regs[["b"]]<-regs[["b"]]--17
+                      regs[["nxt"]] <- regs[["nxt"]] + 1 
+         regs
+    }
+ , function(regs) {
+ message(" jnz 1 -23 ")
+ if ( 1  > 0) {
+                      regs[["nxt"]] <- regs[["nxt"]] +  -23 
+         regs
+    }
+ , function(regs) {regs})

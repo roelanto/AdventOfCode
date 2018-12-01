@@ -1,13 +1,30 @@
-
 library(parallel)
+library(memoise)
 
-no_cores <- detectCores() - 1
-cl <- makeCluster(no_cores)
-clusterExport(cl, "expand")
-clusterExport(cl, "blockasstring")
-clusterExport(cl, "rotate")
+#no_cores <- detectCores() - 1
+#cl <- makeCluster(no_cores)
+expand <- function(x) {
+    res <- vector("list", length=8)
+    b<-x
+    res[[1]] <- b
+    for (i in c(1:3)) {
+        b <- rotate(b)
+        res[[i+1]] <- b
+    }
+    b <- x[,c(ncol(x):1)]
+    res[[5]] <- b
+    i <- i+1
+    for (j in c(1:3)) {
+        i <- i+1
+        b <- rotate(b)
+        res[[i+1]] <- b
+    }
+    return(res)
+}
 
-ruletable <- read.delim("~/AdventOfCode/day21/input.txt", sep=' ', header=FALSE, stringsAsFactors=FALSE)
+
+
+ruletable <- read.delim("~/AdventOfCode/day21/inputarno.txt", sep=' ', header=FALSE, stringsAsFactors=FALSE)
 
 rules <- vector("list", length=nrow(ruletable))
 for (i in c(1:nrow(ruletable))) {
@@ -25,18 +42,35 @@ for (i in c(1:nrow(ruletable))) {
 
 block <- matrix(strsplit(".#...####", "")[[1]], byrow=TRUE, nrow=3)
 
+
+blockasstring <- function(m) {
+    return(as.character(t(m)))
+}
+
+memexpand <- memoise(expand)
+memblockasstring <- memoise(blockasstring)
+memnrow <- memoise(nrow)
+
+rotate <- function(x) t(apply(x, 2, rev))
+
+
 applyrules <- function(block, rules) {
     for (rule in rules) {
 #        message("Rule: ", rule$pattern)
-        expandedpatterns <- expand(rule$pattern)
-#        message("Expanded patterns ", expandedpatterns)
-        l <- lapply(expandedpatterns, function(pattern) {
-#            message("COnsidering ", pattern)
-            if (nrow(block) == nrow(pattern) && all(blockasstring(block) == blockasstring(pattern))) {
+        expandedpatterns <- memexpand(rule$pattern)
+                                        #        message("Expanded patterns ", expandedpatterns)
+        numblockrows <- memnrow(block)
+        blockstring <- memblockasstring(block)
+#        message(expandedpatterns)
+        l <- lapply(expandedpatterns, function(pattern, numblockrows) {
+#            message("Considering ", pattern, " bs ", blockstring, " m ", memnrow(pattern))
+            if (numblockrows == memnrow(pattern)) {
+                if (identical(blockstring,memblockasstring(pattern))) {
 #                message("Found, expansion: ", rule$expansion)
                 return(rule$expansion)
+                }
             }
-        })
+        }, numblockrows=numblockrows)
 #        print(l)
         if (length(which(sapply(l, is.null) == FALSE)) < length(l)) {
             l <- l[-which(sapply(l, is.null) == TRUE)]
@@ -75,30 +109,6 @@ glue <- function(l) {
 
 
 
-expand <- function(x) {
-    res <- vector("list", length=8)
-    b<-x
-    res[[1]] <- b
-    for (i in c(1:3)) {
-        b <- rotate(b)
-        res[[i+1]] <- b
-    }
-    b <- x[,c(ncol(x):1)]
-    res[[5]] <- b
-    i <- i+1
-    for (j in c(1:3)) {
-        i <- i+1
-        b <- rotate(b)
-        res[[i+1]] <- b
-    }
-    return(res)
-}
-
-blockasstring <- function(m) {
-    return(as.character(t(m)))
-}
-
-rotate <- function(x) t(apply(x, 2, rev))
 
 process <- function(block) {
     bs <- 3
@@ -123,20 +133,36 @@ iterations <- function(block, numiters) {
         message("iteration ", i)
         pblocks <- process(pblocks)
         message("processing ", length(pblocks), " blocks")
-        res <- parLapply(cl, pblocks, applyrules, rules)
+        res <- lapply( pblocks, applyrules, rules)
         message("res size: ", length(res))
         pblocks <- glue(res)
+#        print(pblocks)
     }
     return(pblocks)
 }
 
+#clusterExport(cl, "expand")
+#clusterExport(cl, "blockasstring")
+#clusterExport(cl, "rotate")
+#clusterExport(cl, "memexpand")
+#clusterExport(cl, "memblockasstring")
+#clusterExport(cl, "memnrow")
+
 ## pt 1
-pblocks <- iterations(block, 5)
-sum(as.character(pblocks)=="#")
+fff <- function() {
+    pblocks <- iterations(block, 5)
+    sum(as.character(pblocks)=="#")
+}
+# fff()
 
 ##pt 2
-pblocks <- iterations(block, 18)
-sum(as.character(pblocks)=="#")
+g <- function() {
+    pblocks <- iterations(block, 18)
+    sum(as.character(pblocks)=="#")
+}
+# g()
+
+
 
 
 

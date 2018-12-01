@@ -1,0 +1,385 @@
+all <- list( function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set i 31 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]] <- 31 
+regs[["last"]] ==  1 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set a 1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["a"]] <- 1 
+regs[["last"]] ==  2 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mul p 17 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- 17 * regs[["p"]] 
+regs[["last"]] ==  3 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz p p , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["p"]]  > 0) {
+               jmpseq <-  4  +  regs[["p"]] 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  4 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mul a 2 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["a"]] <- 2 * regs[["a"]] 
+regs[["last"]] ==  5 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add i -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]]<-regs[["i"]]+-1 
+regs[["last"]] ==  6 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz i -2 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["i"]]  > 0) {
+               jmpseq <-  7  +  -2 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  7 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add a -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["a"]]<-regs[["a"]]+-1 
+regs[["last"]] ==  8 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set i 127 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]] <- 127 
+regs[["last"]] ==  9 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set p 622 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- 622 
+regs[["last"]] ==  10 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mul p 8505 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- 8505 * regs[["p"]] 
+regs[["last"]] ==  11 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mod p a , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]]<-regs[["p"]]%%regs[["a"]] 
+regs[["last"]] ==  12 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mul p 129749 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- 129749 * regs[["p"]] 
+regs[["last"]] ==  13 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add p 12345 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]]<-regs[["p"]]+12345 
+regs[["last"]] ==  14 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mod p a , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]]<-regs[["p"]]%%regs[["a"]] 
+regs[["last"]] ==  15 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set b p , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["b"]] <- regs[["p"]] 
+regs[["last"]] ==  16 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mod b 10000 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["b"]]<-regs[["b"]]%%10000 
+regs[["last"]] ==  17 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" snd b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ message(paste(" ", regs[["sendbuffer"]]))
+ regs[["sendbuffer"]]  <- append( regs[["sendbuffer"]]  ,  regs[["b"]] ) 
+regs[["last"]] ==  18 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add i -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]]<-regs[["i"]]+-1 
+regs[["last"]] ==  19 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz i -9 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["i"]]  > 0) {
+               jmpseq <-  20  +  -9 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  20 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz a 3 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["a"]]  > 0) {
+               jmpseq <-  21  +  3 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  21 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" rcv b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if (length(regs[["recvbuffer"]]) > 0) {
+            received <- regs[["recvbuffer"]][1]
+            regs[["recvbuffer"]] <- regs[["recvbuffer"]][-1]
+            message("Received ", received)
+             regs[["b"]]  <- received
+        } else {
+            regs[["state"]] <- "WAITING"
+        } 
+regs[["last"]] ==  22 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz b -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["b"]]  > 0) {
+               jmpseq <-  23  +  -1 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  23 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set f 0 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["f"]] <- 0 
+regs[["last"]] ==  24 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set i 126 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]] <- 126 
+regs[["last"]] ==  25 } 
+        regs
+    }
+,
+function(regs, sendbuffer=NA, recvbuffer=NA) {
+    message(" rcv a , p = ", regs[["p"]] )
+    if (regs[["state"]] == "RUNNING") {
+        if (length(regs[["recvbuffer"]]) > 0) {
+            received <- regs[["recvbuffer"]][1]
+            regs[["recvbuffer"]] <- regs[["recvbuffer"]][-1]
+            message("Received ", received)
+            regs[["a"]]  <- received
+        } else {
+            regs[["state"]] <- "WAITING"
+        } 
+        regs[["last"]] ==  26
+    } 
+    regs
+}
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" rcv b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if (length(regs[["recvbuffer"]]) > 0) {
+            received <- regs[["recvbuffer"]][1]
+            regs[["recvbuffer"]] <- regs[["recvbuffer"]][-1]
+            message("Received ", received)
+             regs[["b"]]  <- received
+        } else {
+            regs[["state"]] <- "WAITING"
+        } 
+regs[["last"]] ==  27 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set p a , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- regs[["a"]] 
+regs[["last"]] ==  28 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" mul p -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]] <- -1 * regs[["p"]] 
+regs[["last"]] ==  29 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add p b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["p"]]<-regs[["p"]]+regs[["b"]] 
+regs[["last"]] ==  30 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz p 4 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["p"]]  > 0) {
+               jmpseq <-  31  +  4 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  31 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" snd a , p = ", regs[["p"]] )
+ if (regs[["state"]] == "RUNNING") {
+     message(paste(" ", regs[["sendbuffer"]]))
+     regs[["sendbuffer"]]  <- append( regs[["sendbuffer"]]  ,  regs[["a"]] ) 
+     regs[["last"]] ==  32 } 
+ regs
+ }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set a b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["a"]] <- regs[["b"]] 
+regs[["last"]] ==  33 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz 1 3 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( 1  > 0) {
+               jmpseq <-  34  +  3 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  34 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" snd b , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ message(paste(" ", regs[["sendbuffer"]]))
+ regs[["sendbuffer"]]  <- append( regs[["sendbuffer"]]  ,  regs[["b"]] ) 
+regs[["last"]] ==  35 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" set f 1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["f"]] <- 1 
+regs[["last"]] ==  36 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" add i -1 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ regs[["i"]]<-regs[["i"]]+-1 
+regs[["last"]] ==  37 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz i -11 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["i"]]  > 0) {
+               jmpseq <-  38  +  -11 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  38 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" snd a , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ message(paste(" ", regs[["sendbuffer"]]))
+ regs[["sendbuffer"]]  <- append( regs[["sendbuffer"]]  ,  regs[["a"]] ) 
+regs[["last"]] ==  39 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz f -16 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["f"]]  > 0) {
+               jmpseq <-  40  +  -16 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  40 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {
+ message(" jgz a -19 , p = ", regs[["p"]] )
+if (regs[["state"]] == "RUNNING") {
+ if ( regs[["a"]]  > 0) {
+               jmpseq <-  41  +  -19 
+for (c in c(jmpseq:length(all))) {
+if (regs[["state"]] != "WAITING") {
+regs <- lapply(list(all[[c]]), function(f) f(regs))[[1]]
+}
+}
+        } 
+regs[["last"]] ==  41 } 
+        regs
+    }
+ , function(regs, sendbuffer=NA, recvbuffer=NA) {regs})
