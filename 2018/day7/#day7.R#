@@ -1,0 +1,145 @@
+setwd("~/AdventOfCode/day7")
+lines <- read.table("inputsample.txt", sep="Q")
+
+setClass(Class="disc", representation=list(name="character", weight="numeric", supports="vector"))
+
+parseLine <- function(line) {
+    name <- strsplit(line, " ")[[1]][1]
+    supports <- c(NA)
+    weight <- as.numeric(
+        strsplit(
+            strsplit(strsplit(line, " ")[[1]][2],
+                     '\\(')[[1]][2], '\\)')[[1]][1])
+    if (length(strsplit(line, " ")[[1]])>3) {
+        supports <- sapply(strsplit(line, " ")[[1]][c(4:length(strsplit(line, " ")[[1]]))],
+                           function(x) {
+                               strsplit(x, ",")[[1]][1]})
+    } 
+    new("disc", name=name, weight=weight, supports=supports)
+}
+
+doessupport <- function(disc1, disc2) {
+    disc2@name %in% disc1@supports
+}
+
+weightofdisc <- function(x, discs, recurse=FALSE) {
+                                        #   message("Determine weight of disc ", x)
+    weights <- c()
+    res <- unlist(lapply(discs, function(y) {
+        if (y@name == x) {
+            if (recurse == TRUE) {
+                if (!is.na(y@supports)[1]) {
+                    weights <- 
+                        unlist(
+                            sapply(y@supports, function(x) {
+                                weightofdisc(x, discs, TRUE)
+                            })
+                        )
+                    
+                }
+            }
+            return(sum(weights) + y@weight)
+        }}))
+ #   message("Result: ", res)
+    res
+}
+
+siblings <- function(x, discs) {
+    unlist(lapply(discs, function(y) {
+        if (y@name == x) {
+            for (i in c(1:length(discs))) {
+                if (doessupport(discs[[i]], y)) {
+                    return(discs[[i]]@supports)
+                }
+            }
+        }
+    }))
+}
+
+
+for (i in c(1:length(discs))) {
+    nodes <- siblings(discs[[i]]@name, discs)
+#    message("Considering node with siblings ", nodes)
+    weights <- sapply(nodes, function(node) {weightofdisc(node, discs, recurse=TRUE)})
+#    message("Weights ", paste(weights, " "))
+    if (sd(weights) > 0) {
+        faultynodeidx <- which((!(duplicated(weights) | duplicated(weights, fromLast=TRUE))) == TRUE)
+        goodnodeidx <- which(((duplicated(weights) | duplicated(weights, fromLast=TRUE))) == TRUE)
+        print(!(duplicated(weights) | duplicated(weights, fromLast=TRUE)))
+        message("Node ", 
+                nodes[faultynodeidx], " (embedding: ", embedding(discs[[i]], discs), "has uneven weights, has weight ", weightofdisc(nodes[faultynodeidx], discs, recurse=FALSE), " should have weight ", weightofdisc(nodes[goodnodeidx[1]], discs, recurse=TRUE), "correction: ",  weightofdisc(nodes[goodnodeidx[1]], discs, recurse=TRUE) -  weightofdisc(nodes[faultynodeidx[1]], discs, recurse=TRUE))
+    }
+}
+    
+
+weightofdisc("padx", discs, recurse=TRUE)
+
+unlist(weightofdisc("dytadg", discs))
+
+hasbalance <- function(disc, discs) {
+    hasnodes <- disc@supports
+#    message("considering node ", disc@name)
+    if (!is.na(hasnodes[1])) {
+        return(sapply(hasnodes, function(x, discs) {
+            weightofdisc(x, discs)}, discs=discs))
+    }
+    return(NA)
+}
+
+duplicated(hasbalance(discs[[1]], discs)) | duplicated(hasbalance(discs[[1]], discs), fromLast=TRUE)
+
+for (i in c(1:length(discs))) {
+    hasbalance(discs[[i]], discs)
+}
+
+for (i in c(1:length(discs))) {
+    balanced <- hasbalance(discs[[i]], discs)
+    message("balanced: ", balanced, " supp ", length(discs[[i]]@supports))
+    if (!is.na(balanced)[1]) {
+        if (sum(duplicated(balanced) | duplicated(balanced, fromLast=TRUE)) < length(discs[[i]]@supports)) {
+            message("Node ", discs[[i]]@name, " has supporting nodes with different weights")
+            message("supporting ndoes: ", paste(discs[[i]]@supports, " "))
+            message(" with weights ", paste(sapply(discs[[i]]@supports, weightofdisc, discs), " "))
+            break;
+        }
+    }
+}
+
+discs <- vector("list", length=nrow(lines))
+for (i in c(1:nrow(lines))) {
+    line <- lines[i,]
+    discs[[i]] <- parseLine(as.character(line))
+}
+samples <- sample(discs, size=2)
+randomdisc <- samples[1][[1]]
+oldrandomdisc <- samples[2][[1]]
+
+while(oldrandomdisc@name != randomdisc@name) {
+    oldrandomdisc <- randomdisc
+    message("Considering ", randomdisc@name, " (old: ", oldrandomdisc@name,")")
+    for (disc in discs) {
+        if (doessupport(disc, randomdisc)) {
+            message("New supporting disc: ", disc@name)
+            randomdisc <- disc
+        }
+    }
+}
+
+
+
+embedding <- function(randomdisc, discs) {
+    level <- 1
+    while(oldrandomdisc@name != randomdisc@name) {
+        oldrandomdisc <- randomdisc
+        for (disc in discs) {
+            if (doessupport(disc, randomdisc)) {
+                level <- level + 2
+                randomdisc <- disc
+            }
+        }
+    }
+    level
+}
+
+
+embedding(discs[[2]],discs)
