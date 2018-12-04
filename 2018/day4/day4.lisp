@@ -1,6 +1,11 @@
 (load "/Users/roelant/quicklisp/setup.lisp")
 (ql:quickload :cl-ppcre)
 
+(defun maxint (list)
+  "Returns maximum of given list of integers, discards nils."
+  (first  (sort (remove nil (copy-list list)) '>)))
+
+
 (defun get-file (filename)
   "read file line-by-line, return contents in a list"
   (with-open-file (stream filename)
@@ -69,53 +74,39 @@
 (setf alldays (remove-duplicates (mapcar #'second whenasleep) :test 'equal))
 (setf allguards (remove-duplicates (mapcar #'second parsedlines)))
 
-;; aggregrate the cumasleep per day
-
 (defun cumasleep (guardid whenasleep)
-  ""
+  "Filter out the when-asleep records for guardid from the list
+whenasleep, returns list of when-asleep records, one list per day,
+each list representing for each minute whether the guard was asleep or
+not: (0 0 0 0) (0 0 1 0 0 ) etc. "
   (mapcar #'(lambda (x) (if (equal (first x) guardid)
 			    (third x)
 			    0)) whenasleep)
   )
 
 (defun aggregatebyday (guardid dayid whenasleep)
-  ""
+  "Returns the WHENASLEEP records for a given guard (GUARDID) and a given day
+(DAYID).  The DAYID is a list that looks like (11 . 15) for november
+15th. Returns all by-minute logs for the given day."
   (mapcar #'(lambda (x) (if (equal (first x) guardid)
 			    (if (equal (second x) dayid)
 				(progn
-				  (write dayid)
 				  (fourth x))
 				nil)
 			    nil)
 		    ) whenasleep))
 
 
-
-
-		       
-			 
-(defun cumwhenasleep (guardid whenasleep)
-  ""
-  (mapcar #'(lambda (x) (if (equal (first x) guardid)
-			    (third x)
-			    0)) whenasleep)
-  )
-
-;;(cumasleep 10 whenasleep)
-
-;; determine cumulative sleep
 (defun sleepiestguard (whenasleep allguards)
-  ""
+  "Returns a list of lists, with each embedded list representing the
+guard (first element) and his cumulative sleeptime (second element)."
   (mapcar #'(lambda (y) (list (first y) (apply #'+ (second y)))) (mapcar #'(lambda (x) (list x (cumasleep x whenasleep))) allguards))
   )
 
 
-;;  (mapcar #'(lambda (x) (byguard whenasleep allguards)) whenasleep))
 
-
-;; determine the hour
 (defun whensleepiest (guardid alldays whenasleep)
-  ""
+  "Returns a list of lists, with each embedded list representing the sleepiest minute (first element) and total sleeptime (second element) over all days."
   (setf byday (remove nil (apply #'append (mapcar #'(lambda (day)  (aggregatebyday guardid day whenasleep)) alldays))))
   (if (not (null byday))
       (progn
@@ -125,9 +116,8 @@
       nil
       ))
 
-;; determine the hour
 (defun whensleepiestbyminute (guardid alldays whenasleep)
-  ""
+  "Returns a list of lists, with each embedded list representing the sleepiest minute (first element) and total sleeptime (second element) over all days."
   (setf byday (remove nil (apply #'append (mapcar #'(lambda (day)  (aggregatebyday guardid day whenasleep)) alldays))))
   (if (not (null byday))
       (progn
@@ -136,21 +126,19 @@
       nil
       ))
 
-;; sort on asleep time and return id of the guard
+; which guard is the sleepiest?
 (setf guardid (first (first (sort (sleepiestguard whenasleep allguards) (lambda(x y) (< (second y) (second x)))))))
 
+; how sleepy is the guard?
 (* guardid (first (first (whensleepiest guardid alldays whenasleep))))
 
-
-(defun maxint (list)
-  (first  (sort (remove nil (copy-list list)) '>)))
-
-;; returns the position of the guard in the guardlist with the highest amount of sleep per minute
+; which guard has the the sleepiest minute?
 (setf guardindex (which (mapcar #'maxint (mapcar #'(lambda (x) (whensleepiestbyminute x alldays whenasleep)) allguards))
 			(list (maxint (mapcar #'maxint (mapcar #'(lambda (x) (whensleepiestbyminute x alldays whenasleep)) allguards)))) 0 ()))
 
 (setf guardid (nth (first guardindex) allguards))
 
+; which minute is that?
 (setf minute (which (nth (first guardindex) (remove nil (mapcar #'(lambda (x) (whensleepiestbyminute x alldays whenasleep)) allguards)))
 		    (list (maxint (nth (first guardindex) (remove nil (mapcar #'(lambda (x) (whensleepiestbyminute x alldays whenasleep)) allguards))))) 0 ()))
 
