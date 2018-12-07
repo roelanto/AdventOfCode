@@ -30,19 +30,20 @@
   (elt l ptr))
 
 ;; puzzle 1: run on sample data
-(setf inputdata (get-file "sample1.txt"))
-(apply #'+ inputdata)
+;; (setf inputdata (get-file "sample1.txt"))
+;; (apply #'+ inputdata)
 
 ;; puzzle 1: run on real data
-(setf inputdata (get-file "input.txt"))
-(apply #'+ inputdata)
+;; (setf inputdata (get-file "input.txt"))
+;; (apply #'+ inputdata)
 
 
 ;; puzzle 2
 
 (defvar ptr)
 (defvar beginvar)
-(next-val inputdata)
+;;(next-val inputdata)
+
 (defun find-doubles-in-file (filename)
   "solution of the second puzzle"
   (defvar inputdata)
@@ -55,10 +56,30 @@
       while
 	(not (member (setf newsum (reduce #'+ valuelist)) sumlist))
       do
-	(write (length sumlist))
-	(write " ")
+;;	(write (length sumlist))
+;;	(write " ")
 	(setf sumlist (append sumlist (list newsum)))		 
 	(setf valuelist (append valuelist (list (+ beginvar (next-val inputdata))))))
+   newsum)
+
+(defun find-doubles-in-file (filename)
+  "solution of the second puzzle"
+  (defvar inputdata)
+  (setf beginvar 0)
+   (setf ptr -1)
+   (setf valuelist (list 0))
+   (setf sumlist ())
+   (setf inputdata (get-file filename))
+   (setf newsum 0)
+   (loop
+      while
+	(not (member (setf newsum (+ newsum (next-val inputdata))) sumlist))
+      do
+;;	(write (length sumlist))
+;;	(write " ")
+;;	(write newsum)
+;;	(write " ")
+	(setf sumlist (append sumlist (list newsum))))		 
    newsum)
 
 (find-doubles-in-file "input.txt")

@@ -1,3 +1,5 @@
+;; this code runs excruciating slow. Bruteforcing is punished here. 
+
 (load "/Users/roelant/quicklisp/setup.lisp")
 (ql:quickload :cl-ppcre)
 
@@ -33,6 +35,7 @@
       (if (equal (first list) element)
 	  (duplicates (rest list) element (1+ num))
 	  (duplicates (rest list) element num))))
+
 
 (defun is-one (list num)
   ""
