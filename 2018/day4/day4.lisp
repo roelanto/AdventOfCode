@@ -18,8 +18,8 @@
   (setf (values match position)
 	(cl-ppcre:scan-to-strings "[\d-(\d+)-\(d+) (\d\d):(\d\d)] .+$" string))
   (list
-   :id (parse-integer (aref position 0))
-   :startx (parse-integer (aref position 1))
+   (parse-integer (aref position 0))
+   (parse-integer (aref position 1)))
    :starty (parse-integer (aref position 2))
    :width (parse-integer (aref position 3))
    :height (parse-integer (aref position 4))
