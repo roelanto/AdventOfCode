@@ -18,13 +18,27 @@ fn compute_required_fuel_b(mass:i32) -> i32{
     }
     return sum_of_mass;
 }
-    
-fn main() {
-    let content = day1::read_file("input.txt");
+
+fn solve_second_puzzle(filename:&str) {
+    let content = day1::read_file(filename);
     let cursor = io::Cursor::new(content);
     let mut lines_iter = cursor.lines().map(|l| l.unwrap());
     let numbers: Vec<i32> = lines_iter.map(|x| compute_required_fuel_b(x.parse::<i32>().unwrap())).collect();
     println!("Sum of mass: {}", numbers.iter().sum::<i32>());
+}
+
+fn solve_first_puzzle(filename:&str) {
+    let content = day1::read_file(filename);
+    let cursor = io::Cursor::new(content);
+    let mut lines_iter = cursor.lines().map(|l| l.unwrap());
+    let numbers: Vec<i32> = lines_iter.map(|x| compute_required_fuel(x.parse::<i32>().unwrap())).collect();
+    println!("Sum of mass: {}", numbers.iter().sum::<i32>());
+}
+
+fn main() {
+    let filename = "input.txt";
+    solve_first_puzzle(filename);
+    solve_second_puzzle(filename);
 
 }
 
