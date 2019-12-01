@@ -99,12 +99,29 @@
 	    0
 	    1))))
 
+(defun lookup-time (rule)
+  ""
+  (first (which (coerce "*ABCDEFGHIJKLMNOPQRSTUVWXYZ" 'list) (list (coerce (first rule) 'character)) 0 ())))
+  
+(defun adorn-with-time (rule time)
+  ""
+  (list (first rule) (second rule) time))
+
+(mapcar #'(lambda (rule) rule) rulestack)
+
+(mapcar #'(lambda (rule) (adorn-with-time rule (lookup-time rule))) rulestack)
+
+(adorn-with-time '(A C) (lookup-time '(A C)))
+
 (defun getallrules ()
   "loads all rules, adds *-expansion to generate root rules"
-  (setf allrules (mapcar #'(lambda (line) (parse-input line)) (remove nil (get-file "../day7/input.txt"))))
+  (setf allrules (mapcar #'(lambda (line) (parse-input line)) (remove nil (get-file "../day7/sample.txt"))))
+  (setf allrules (mapcar #'(lambda (rule) (adorn-with-time rule (lookup-time rule))) allrules))
+
   (setf beginsymbols (set-difference (remove-duplicates (mapcar #'first allrules) )
 				     (remove-duplicates (mapcar #'second allrules) )))
-  (append allrules (mapcar #'(lambda (x) (list '* x)) beginsymbols)))
+  (append allrules (mapcar #'(lambda (x) (list '* x 0)) beginsymbols)))
+
   
 
 (setf allrules (getallrules))
@@ -117,17 +134,49 @@
       (sort-rules (apply #'append (mapcar #'(lambda (symbol) (next-available-rules allrules symbol () ())) beginsymbols)) hasseen)) 
 (setf state (list (first (first rulestack))))
 
-(loop while (not (equal (first (last state)) terminalnode))
-   do
-     (setf rulestack
-	   (sort-rules
-	    (progn
-	      (setf hasseen (remove-duplicates (append hasseen (list (first (first (next-available-rules allrules (second (first rulestack)) hasseen ())))))))
-	      (if (member (first (first rulestack)) (coerce beginsymbols 'list))
-		  (setf state (append state (list (first (first rulestack))))))
-	      (setf state (append state (list (second (first rulestack)))))
-	      (append (next-available-rules allrules (second (first rulestack)) hasseen ()) (rest rulestack)))
-	    hasseen)))
+;;(loop while (not (equal (first (last state)) terminalnode))
+;;   do
+;;     (progn
+(setf thetime 0)
+rulestack
+       (setf rulestack
+	     (sort-rules
+	      (progn
+		
+		(if (equal (third (first rulestack)) 0)
+		    (progn 
+		      (setf hasseen (remove-duplicates (append hasseen (list (first (first (next-available-rules allrules (second (first rulestack)) hasseen ())))))))
+		      (if (member (first (first rulestack)) (coerce beginsymbols 'list))
+			  (setf state (append state (list (first (first rulestack))))))
+		      (setf state (append state (list (second (first rulestack)))))
+		      (append (next-available-rules allrules (second (first rulestack)) hasseen ()) (rest rulestack)))
+		    rulestack))	     
+	      hasseen))
+state
+
+;; still need to implement workers
+(setf rulestack (append (list (list (first (first rulestack)) (second (first rulestack)) (1- (third (first rulestack))))) (rest rulestack)))
+(setf thetime (1+ thetime))
+(setf rulestack (mapcar #'(lambda (x) (if (and (< (next-rule-score  x rulestack hasseen ) 1)
+			       (or (null (fourth x)) (< (fourth x) 1)))
+			  (append x 0)
+			  (append x 1))) rulestack))
+(second (append (first rulestack) 0))
+(length (first rulestack))
+(cons '(A B) 2)
+(length (append '(A B))
+
+
+(> (fourth '(0 1 2 3 4)) 1)
+(third (first rulestack))
+(first rulestack)
+(length  rulestack)
+(append '((A B)) (rest rulestack))
+
+
+	     (append (list (first (first rulestack)) (second (first rulestack)) (1- (third (first rulestack)))) (rest rulestack))))
+
 
 ;; final answer still has *s as initial states
 (remove '* state)
+

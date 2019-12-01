@@ -146,9 +146,9 @@
 
 
 ;; testing statements:
-(find-coord-with-value (generate-power-cells 3) (find-maxval (generate-power-cells 3)))
-(generate-power-cells 3)
-(get-max-power-with-size 250)
+;; (find-coord-with-value (generate-power-cells 3) (find-maxval (generate-power-cells 3)))
+;; (generate-power-cells 3)
+;; (get-max-power-with-size 250)
 
 ;; solution for day 11, 1.
 (print-result (get-max-power-with-size 3))

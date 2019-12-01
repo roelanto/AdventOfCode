@@ -94,7 +94,7 @@
   ""
   (let* ((height (+ 2 (- (second (determine-y-bounds positions)) (first (determine-y-bounds positions)))))
 	 (width (+ 2 (- (second (determine-x-bounds positions)) (first (determine-x-bounds positions)))))
-	 (file (concatenate 'string "pngfile" (write-to-string step) ".png"))
+	 (file (concatenate 'string "output/pngfile" (write-to-string step) ".png"))
 	 (png (make-instance 'png
 			     :color-type :grayscale-alpha
 			     :width width
@@ -104,7 +104,7 @@
 				   (setf (aref image
 					       (second (first position))
 					       (first (first position))
-					       1 ) 255))) positions) (write-png png file))))
+					       1 ) 255))) positions) (write-png png file)))
 
 (defun determine-scale-factor (positions)
   ""
@@ -117,17 +117,40 @@
 ;; or use sample.txt for samples. 
 (setf positions (mapcar #'(lambda (line) (parse-input line)) (remove nil (get-file "../day10/input.txt"))))
 
-(format t "")
-(loop for step from 0 to 80000
+(defun has-adjacent (pos positions)
+  ""
+  (if (null positions)
+      0
+      (let ((distance (list
+		       (abs (- (first (first (first positions))) (first (first pos))))
+		       (abs (- (second (first (first positions))) (second (first pos)))))))
+	(if (and
+	     (< (+ (first distance) (second distance)) 3)
+	     (or
+	      (equal (first distance) 1)
+	      (equal (second distance) 1)))
+	    1
+	    (has-adjacent pos (rest positions))))))
+
+(defun should-stop (positions)
+  ""
+  (equal (length positions) (apply #'+ (mapcar #'(lambda (pos) (has-adjacent pos positions)) positions))))
+
+
+(setf positions (mapcar #'(lambda (line) (parse-input line)) (remove nil (get-file "../day10/input.txt"))))
+(time 
+(loop for step from 0 to 10159
    do
      (progn
-       (if (equal 62 (apply #'max (dimensions positions)))
-	   (format t "~a: ~a ~%" step (apply #'max (dimensions positions)))
+       (if (equal T (should-stop positions))
+	   (progn
+	     (visualize-png (project positions (determine-scale-factor positions)) step)
+	     (format t "~a: ~a ~% ~a" step (apply #'max (dimensions positions)) (should-stop positions)))
 	   )
-       (if (> 1024 (apply #'max (dimensions positions)))
+       (if (> 1 (apply #'max (dimensions positions)))
 	   (visualize-png (project positions (determine-scale-factor positions)) step)
 	   )
-       (setf positions (updatepositions positions))))
+       (setf positions (updatepositions positions)))))
 
 
 (defun visualize-gif (positions step)

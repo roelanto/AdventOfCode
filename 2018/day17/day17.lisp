@@ -1,5 +1,7 @@
 (load "/Users/roelant/quicklisp/setup.lisp")
 (ql:quickload :cl-ppcre)
+(ql:quickload "zpng")
+(use-package '#:zpng)
 
 (defun parse-input (string)
   "parses the input string. If nil, check that there are parentheses and double backslashes in the regexp. "
@@ -10,21 +12,11 @@
       (convert-coordinates-yx (parse-integer (aref position 1))    (parse-integer (aref position 3))    (parse-integer (aref position 4)))
       ))
 
- 
-
-  (list
-   (aref position 0)
-   (parse-integer (aref position 1))
-   (aref position 2)
-   (parse-integer (aref position 3))
-   (parse-integer (aref position 4))))
-
-
 (defun get-file (filename)
   "read file line-by-line, return contents in a list"
   (with-open-file (stream filename)
     (loop for line = (read-line stream nil)
-          while line
+       while line
        collect line)))
 
 (defun convert-coordinates-xy (first-coord second-coord-from second-coord-to)
@@ -52,8 +44,8 @@
 		 collect		   
 		   (list x y)))))
 
-(coerce "abc" 'list)
 (defun convert-to-string (field coord water)
+;;  (format t "convert-to-string ~a ~a ~a ~%" (length field) coord (length water))
   (concatenate 'string (mapcar #'(lambda (coord)
 				   (if (> (second coord) *minimum-y-coord*)
 				       #\B
@@ -75,24 +67,22 @@
 	   (equal (first tiles) #\I)
 	   (equal (first tiles) #\W))
 	  (progn
-;;	    (break)
-	  (check-for-water (cdr tiles) coord (cdr rect) (append result
-								(list (list (+ (first coord) (first (first rect)))
-									    (+ (second coord) (second (first rect)))))))
-	  )
+	    ;;	    (break)
+	    (check-for-water (cdr tiles) coord (cdr rect) (append result
+								  (list (list (+ (first coord) (first (first rect)))
+									      (+ (second coord) (second (first rect)))))))
+	    )
 	  (check-for-water (cdr tiles) coord (cdr rect) result))
       result))
-(check-for-water-string "SWSSWS" '(499 0) *rect*)
+
+;; test code: (check-for-water-string "SWSSWS" '(499 0) *rect*)
 
      
     
-(defun convert-string-to-water-coords (string coord water)
-  ""
-  )
-
 (defun match-rule-string (rule-string pattern-string)
   ""
   (match-rule (coerce rule-string 'list) (coerce pattern-string 'list)))
+
 (defun match-rule (rule pattern)
   ""
   (if (null rule)
@@ -108,7 +98,7 @@
 	  (match-rule (cdr rule) (cdr pattern))
 	  nil)))
 
-(cons "b" (cons "a" ()))
+
 (defun rewrite-string (rule-string pattern-string)
   ""
   (coerce (rewrite (coerce rule-string 'list) (coerce pattern-string 'list) ()) 'string))
@@ -125,10 +115,6 @@
       result))
 
 
-(rewrite (coerce "Xrl" 'list) (coerce "aaa" 'list) ())
-	
-	    (first pattern))
-	    
 
 (defun apply-rules (rules pattern)
   ""
@@ -137,7 +123,7 @@
      do
        (if (match-rule-string (first rule) pattern)
 	   (progn
-	     (format t "rule ~a applies to pattern ~a ~%" rule pattern)
+;;	     (format t "rule ~a applies to pattern ~a ~%" rule pattern)
 	     (return (setf result (rewrite-string (third rule) pattern))))))
   result)
 
@@ -186,22 +172,125 @@
   (let ((water (list '(500 0))))
     (simulate-round field water n)))
 
+(trace simulate-water)
+(defun simulate-water (field coord water old-pos)
+  "simulates what happens if one drop drops"
+;;  (format t "~%SIMULATE water is ~a~% coord is ~a~%old-pos is ~a~%" water coord old-pos)
+  ;;(visualize field water)
+  (setf now-water-seen (append now-water-seen (list coord)))
+  (let ((rect-upper-left (list (1- (first coord)) (second coord))))
+    
+    (if (> *minimum-y-coord* (second coord))
+	
+	(let ((new-water (set-difference (remove coord (find-water rect-upper-left water) :test 'equal) water :test 'equal)))
+	  ;;  (format t "Found new water: ~a~%" new-water)
+	  (if (and
+	       (null (member coord old-pos :test 'equal))
+	       (< 0 (length new-water)))
+	      (first (loop for new-coord in new-water
+			collect
+			  (simulate-water field new-coord (append water new-water) (append old-pos (list coord)))))
+	      coord))
+	coord
+	)))
+  
+
+(defun bound (l &optional (min-y 1800))
+  (remove 'nil (mapcar #'(lambda (el) (if (> min-y (second el)) el nil)) l)))
+
+(bound '((1 1) (10 10) (100 100)))
+(defun simulate-game-recursive (field  max-new)
+  (setf ever-has-seen ())
+  (let ((water '((500 0)))
+	(new-water ()))
+    (loop for x from 0 to max-new 
+       do 
+	 (progn
+	   (format t "DROP BEGIN ~a~%" x)
+	   (setf previous-now-water-seen (copy-list now-water-seen))
+	   (setf now-water-seen ())
+	   (setf prev-water (copy-list water))
+	   (setf new-water (append water (list (simulate-water field (first water) water ()))))
+;;	   (format t "DROP END ~a has seen ~a, which is ~a different from previous times~%" x (length (remove-duplicates now-water-seen :test 'equal)) (length (set-difference (remove-duplicates now-water-seen :test 'equal) (remove-duplicates previous-now-water-seen :test 'equal))))
+;;	   (format t "The new we have seen: ~a~%"
+;;		   (set-difference now-water-seen ever-has-seen :test 'equal))
+	   (setf ever-has-seen (remove-duplicates (append ever-has-seen now-water-seen) :test 'equal))
+	   (setf water new-water)
+	   (if (= 0 (length (set-difference (bound water) (bound prev-water) :test 'equal)))
+	       (progn
+;;		 (break)
+		 (format t "STOP CONDITION ~a~%" (length (remove-duplicates (bound ever-water-seen) :test 'equal)))))
+	   (if (= 0 (mod x 1000))
+	       (visualize-png field water x))
+	   )))
+  (format t "I have seen ~a~%" (length (remove-duplicates (bound ever-water-seen) :test 'equal))))
+	
+(untrace simulate-water)
+
+
+(simulate-game-recursive field 5000)
+(visualize field (remove-duplicates ever-water-seen :test 'equal))
+(length (remove-duplicates ever-water-seen :test 'equal))
+
+(visualize field (remove-duplicates ever-water-seen :test 'equal))
+
+(setf water '((500 0)))
+(setf water (append water (simulate-game-recursive field water)))
+
 (simulate-game field 51)
 
-(defparameter *minimum-y-coord* 14)
+(defparameter *minimum-y-coord* 1876)
 
 (defun find-water (coord water)
-  (format t "Finding water at coord ~a (~a)~%" coord (convert-to-string field coord water))
-  (setf new-block (apply-rules rules (convert-to-string field coord water)))
-  (format t "Result of applyinf the rule: are pattern and rule the same? ~a~%" (equal new-block (convert-to-string field coord water)))
-  (format t "result of checking for water string: ~a~%"       (check-for-water-string new-block coord *rect*))
-  (if (equal new-block (convert-to-string field coord water))
+;;  (format t "Finding water at coord ~a (~a)~%" coord (convert-to-string field coord water))
+  (if (< *minimum-y-coord* (second coord))
       nil
-      (check-for-water-string new-block coord *rect*)
-      )
-  )
+      (progn 
+	(setf new-block (apply-rules rules (convert-to-string field coord water)))
+;;	(format t "Result of applying the rule: are pattern and rule the same? ~a~%" (equal new-block (convert-to-string field coord water)))
+;;	(format t "result of checking for water string: ~a~%"       (check-for-water-string new-block coord *rect*))
+	(if (equal new-block (convert-to-string field coord water))
+	    nil
+	    (check-for-water-string new-block coord *rect*)
+	    ))))
 
 (find-water '(499 0) water)
+
+(append (mapcar 'first field) (mapcar 'first water))
+(defun visualize-png (field water step)
+  ""
+  (let*
+      ((minx (apply 'min (append (mapcar 'first field) (mapcar 'first water))))
+       (maxx (apply 'max (append (mapcar 'first field) (mapcar 'first water))))
+       (miny (apply 'min (append (mapcar 'second field) (mapcar 'second water))))
+       (maxy (apply 'max (append (mapcar 'second field) (mapcar 'second water))))
+       (height (+ 5 (- maxy miny)))
+       (width (+ 5 (- maxx minx)))
+       (file (concatenate 'string "output/pngfile-" (write-to-string step) ".png"))
+       (png (make-instance 'png
+			   :color-type :truecolor-alpha
+			   :width width
+			   :height height))
+       (image (data-array png)))
+    (format t "~a x ~a" width height)
+    (mapcar #'(lambda (position) (progn
+				   (let ((x (- (first position) minx))
+					 (y (- (second position) miny)))
+				     
+				     (setf (aref image y x 0) 0)
+				     (setf (aref image y x 1) 0)
+				     (setf (aref image y x 2) 0)
+				     (setf (aref image y x 3) 255)))) field)
+    
+    (mapcar #'(lambda (position) (progn
+				   (let ((x (- (first position) minx))
+					 (y (- (second position) miny)))
+				     
+				     (setf (aref image y x 3) 255)
+				     (setf (aref image y x 2) 255)))) water)
+
+    (write-png png file)))
+(visualize-png field water 1)
 
 (defun visualize (field water)
   "creates visualization of the field"
@@ -215,7 +304,7 @@
        do
 	 (progn
 	   (format t "~%~a " y)
-	   (loop for x from minx to maxx
+	   (loop for x from minx to (+ 10 maxx)
 	      do
 		(let ((coord (list x y)))
 		  (if (member coord water :test 'equal)
@@ -233,11 +322,12 @@
 
 (convert-to-string field '(499 0))
 
+(setf field (read-input "input.txt"))
 (setf field (read-input))
 
 (setf rules (list
 	     '("XWXXSX" => "XWXXWX")
-	     '("SWSYYY" => "WWSYYY")
+	     '("SWSYYY" => "WWWYYY")
 	     '("CWSCCC" => "CWWCCC")
 	     '("SWYYYY" => "WWYYYY")
 	     '("SWWYYY" => "WWWCCC")
@@ -248,8 +338,7 @@
 	     '("SSWYYY" => "SWWYYY")
 	     '("WSSYYY" => "WWSYYY")
 	     '("YWSXXX" => "YWWXXX")
-	     '("XWXXBX" => "XIXXIX")
-	     '("XWXXIX" => "XIXXIX")
+	     '("SWWXCW" => "WWWXCW")
 	     ))
 
 (simulate-game field 11)
