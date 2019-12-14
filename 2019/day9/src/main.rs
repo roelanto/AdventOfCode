@@ -1,26 +1,38 @@
 use std::collections::HashSet;
 
-fn yield_argument (v : &Vec<i32>, idx: usize, mode : i32) -> i32 {
+fn yield_argument (v : &Vec<i32>, idx: usize, mode : i32, _override: Option<i32>) -> i32 {
     let arg = v[idx];
-    let val = match mode {
+    let mymode = match _override {
+	Some(internal) => internal,
+	None => mode};
+
+    let val = match mymode {
 	0 => v[arg as usize],
 	_ => arg,
     };
     val
 }
 
-fn yield_arguments_2 (v : &Vec<i32>, idx: usize, opcode : i32) -> (i32, i32) {
+
+fn yield_arguments_1 (v : &Vec<i32>, idx: usize, opcode : i32, overrides: Option<i32>) -> i32 {
     let modes = determine_parameter_modes(opcode);
-    (	yield_argument(v, idx+1, 1),
-	yield_argument(v, idx+2, 1))
+    (	yield_argument(v, idx+1, modes.0, overrides))
 }
 
-fn yield_arguments_3 (v : &Vec<i32>, idx: usize, opcode : i32) -> (i32, i32, i32) {
+fn yield_arguments_2 (v : &Vec<i32>, idx: usize, opcode : i32, overrides: (Option<i32>, Option<i32>)) -> (i32, i32) {
     let modes = determine_parameter_modes(opcode);
-    (	yield_argument(v, idx+1, modes.0),
-	yield_argument(v, idx+2, modes.1),
-	yield_argument(v, idx+3, 1))
+    (	yield_argument(v, idx+1, modes.0, overrides.0),
+	yield_argument(v, idx+2, modes.1, overrides.1))
 }
+
+fn yield_arguments_3 (v : &Vec<i32>, idx: usize, opcode : i32, overrides: (Option<i32>, Option<i32>, Option<i32>)) -> (i32, i32, i32) {
+    let modes = determine_parameter_modes(opcode);
+    (	yield_argument(v, idx+1, modes.0, overrides.0),
+	yield_argument(v, idx+2, modes.1, overrides.1),
+	yield_argument(v, idx+3, modes.2, overrides.2))
+}
+
+
 
 fn run_on_vector  (mut v: Vec<i32>, input: Vec<i32>, pointer:usize ) -> (Vec<i32>, Vec<i32>, bool, usize) {
     let opcode_add = |x : i32, y: i32| {
@@ -46,18 +58,18 @@ fn run_on_vector  (mut v: Vec<i32>, input: Vec<i32>, pointer:usize ) -> (Vec<i32
 	if opcode != 99 {
 	    match determine_opcode(opcode) {
 		1 => {
-		    let args = yield_arguments_3(&v, i, opcode);
+		    let args = yield_arguments_3(&v, i, opcode, (None, None, Some(1)));
 		    i = i+4;
 		    v[args.2 as usize] = args.0 + args.1
 		},
 		2 => {
-		    let args = yield_arguments_3(&v, i, opcode);
+		    let args = yield_arguments_3(&v, i, opcode, (None, None, Some(1)));
 		    i = i+4;
 		    v[args.2 as usize] = opcode_multiply(args.0, args.1)
 		},
 		3 => {
 		    print!("opcode 3: READ ");
-		    let args = yield_arguments_2(&v, i, opcode);
+		    let args = yield_arguments_2(&v, i, opcode, (Some(1), Some(1)));
 		    i = i+2;
 		    let next_input = match input_iter.next() {
 			Some(inner) => inner,
@@ -79,95 +91,46 @@ fn run_on_vector  (mut v: Vec<i32>, input: Vec<i32>, pointer:usize ) -> (Vec<i32
 		},
 		5 => {
 		    println!("Opcode 5");
-
-		    let opcode_arg1 = v[opcode_idx+1];
-		    let opcode_arg1_val = match determine_parameter_modes(opcode).0 {
-			0 => v[opcode_arg1 as usize],
-			_ => opcode_arg1,
-		    };
-		    let opcode_arg2 = v[opcode_idx+2];
-		    let opcode_arg2_val = match determine_parameter_modes(opcode).1 {
-			0 => v[opcode_arg2 as usize],
-			_ => opcode_arg2,
-		    };
-		    println!("Opcodearg2 = {}, interpretation is {} so resulting value is {}", opcode_arg2, determine_parameter_modes(opcode).1, opcode_arg2_val);
-		    println!("jmp if true: opcode_arg1_val > 0, then jump to {}; opcode_arg1_val is {:?} ", opcode_arg2_val, opcode_arg1_val, );
-		    if opcode_arg1_val > 0 {
-			i = opcode_arg2_val as usize;
-			println!("Jumping to {}", i);
+		    let args = yield_arguments_2(&v, i, opcode, (None, None));
+		    println!("jmp if true: arg1val > 0 then jump to {}; {}", args.1, args.0);
+		    if args.0 > 0 {
+			i = args.1 as usize;
 		    } else {
 			i = i+3;
 		    }},
 		6 => {
 		    println!("Opcode 6");
-		    
-		    let opcode_arg1 = v[opcode_idx+1];
-		    let opcode_arg1_val = match determine_parameter_modes(opcode).0 {
-			0 => v[opcode_arg1 as usize],
-			_ => opcode_arg1,
-		    };
-		    let opcode_arg2 = v[opcode_idx+2];
-		    let opcode_arg2_val = match determine_parameter_modes(opcode).1 {
-			0 => v[opcode_arg2 as usize],
-			_ => opcode_arg2,
-		    };
-//		    println!("jmp if equal: opcode_arg1 = {}, val = {}", opcode_arg1, opcode_arg1_val);
-		    if opcode_arg1_val == 0 {
-			i = opcode_arg2_val as usize;
-//			println!("Set index to {}, opcode_arg1_val is {}", i, opcode_arg1_val);
+		    let args = yield_arguments_2(&v, i, opcode, (None, None));
+		    if args.0 == 0 {
+			i = args.1 as usize;
 		    } else {
-//			println!("Moving index from {} to {}", i, i+3);
 			i = i+3;
 		    }},
 		7 => {
-		    let opcode_arg1 = v[opcode_idx+1];
-		    let opcode_arg1_val = match determine_parameter_modes(opcode).0 {
-			0 => v[opcode_arg1 as usize],
-			_ => opcode_arg1,
-		    };
-		    let opcode_arg2 = v[opcode_idx+2];
-		    let opcode_arg2_val = match determine_parameter_modes(opcode).1 {
-			0 => v[opcode_arg2 as usize],
-			_ => opcode_arg2,
-		    };
-		    let opcode_arg3 = v[opcode_idx+3];
-		    let opcode_arg3_val = match determine_parameter_modes(opcode).2 {
-			0 => v[opcode_arg3 as usize],
-			_ => opcode_arg3,
-		    };
-		    println!("Opcode 7, args {:?} {:?} {:?}   {:?} {:?} {:?}", opcode_arg1, opcode_arg1_val, opcode_arg2, opcode_arg2_val, opcode_arg2, opcode_arg3_val);
+		    println!("Opcode 7");
+		    let args = yield_arguments_3(&v, i, opcode, (None, None, Some(1)));
+		    println!("Opcode 7, args {:?} {:?} {:?} ", args.0, args.1, args.2);
 		    i = i+4;
-		    if opcode_arg1_val < opcode_arg2_val {
-			v[opcode_arg3 as usize] = 1;
+		    if args.0 < args.1 {
+			v[args.2 as usize] = 1;
 		    } else {
-			v[opcode_arg3 as usize] = 0;
+			v[args.2 as usize] = 0;
 		    }
-		    },
+		},
 		8 => {
 		    println!("Opcode 8");
-
-		    let opcode_arg1 = v[opcode_idx+1];
-		    let opcode_arg1_val = match determine_parameter_modes(opcode).0 {
-			0 => v[opcode_arg1 as usize],
-			_ => opcode_arg1,
-		    };
-		    let opcode_arg2 = v[opcode_idx+2];
-		    let opcode_arg2_val = match determine_parameter_modes(opcode).1 {
-			0 => v[opcode_arg2 as usize],
-			_ => opcode_arg2,
-		    };
-		    let opcode_arg3 = v[opcode_idx+3];
-		    let opcode_arg3_val = match determine_parameter_modes(opcode).2 {
-			0 => v[opcode_arg3 as usize],
-			_ => opcode_arg3,
-		    };
+		    let args = yield_arguments_3(&v, i, opcode, (None, None, Some(1)));
 		    i = i+4;
-//		    println!("equals: if {:?} == {:?} write 1 to {:}", opcode_arg1_val, opcode_arg2_val, opcode_arg3);
-		    if opcode_arg1_val == opcode_arg2_val {
-			v[opcode_arg3 as usize] = 1;
+		    if args.0 == args.1 {
+			v[args.2 as usize] = 1;
 		    } else {
-			v[opcode_arg3 as usize] = 0;
+			v[args.2 as usize] = 0;
 		    }
+		},
+		9 => {
+		    let args = yield_arguments_1(&v, i, opcode, (None));
+		    i = i+2;
+		    relative_base = relative_base + args
 		},
 		    
 		_ => (),
